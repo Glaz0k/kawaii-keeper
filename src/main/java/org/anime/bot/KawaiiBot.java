@@ -2,12 +2,9 @@ package org.anime.bot;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
-import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.model.message.MaybeInaccessibleMessage;
-import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
-import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 
@@ -27,44 +24,25 @@ public class KawaiiBot {
         });
     }
     private void handleUpdate(Update update) {
-        Long chatId = null;
-        Long userId = null;
         Message message = update.message();
         if (message != null) {
             String text = message.text();
-            chatId = message.chat().id();
-            userId = message.from().id();
+            long chatId = message.chat().id();
+            long userId = message.from().id();
             if (text.startsWith("/")) {
                 handleCommand(userId, chatId, text);
             } else {
-                bot.execute(new SendMessage(chatId.longValue(), defaultResponse));
-                chatId = null;
+                handleMessage(userId, chatId, text);
             }
+            bot.execute(new SendPhoto(chatId, backend.getImage(userId)));
         }
-        CallbackQuery callback = update.callbackQuery();
-        if (callback != null) {
-            MaybeInaccessibleMessage callbackMessage = callback.maybeInaccessibleMessage();
-            chatId = callbackMessage.chat().id();
-            userId = callback.from().id();
-            switch (callback.inlineMessageId()) {
-                case saveButtonId -> backend.saveImage(userId);
-                case rejectButtonId -> backend.removeImage(userId);
-                default -> {}
-            }
-        }
-        if (chatId != null) {
-            bot.execute(new SendPhoto(chatId.longValue(), backend.getImage(userId)));
-        }
+
     }
     private void handleCommand(long userId, long chatId, String text) {
         String command = text.substring(1);
         if (validCommands.contains(command)) {
             switch (command) {
                 case "start" -> {
-                    InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(
-                            new InlineKeyboardButton(saveButtonText, saveButtonId),
-                            new InlineKeyboardButton(rejectButtonText, rejectButtonId)
-                    );
                     backend.setTag(userId, "random");
                     bot.execute(new SendMessage(chatId, greetResponse).replyMarkup(keyboard));
                 } case "clear" -> {
@@ -84,13 +62,25 @@ public class KawaiiBot {
             bot.execute(new SendMessage(chatId, wrongCommandResponse));
         }
     }
+    private void handleMessage(long userId, long chatId, String text) {
+        switch (text) {
+            case saveButtonText ->
+                backend.saveImage(userId);
+            case rejectButtonText ->
+                backend.removeImage(userId);
+            default ->
+                bot.execute(new SendMessage(chatId, defaultResponse));
+        }
+    }
 
-    private TelegramBot bot;
-    private BotBackend backend;
+    private final TelegramBot bot;
+    private final BotBackend backend;
+
     private static final String saveButtonText = "Нравится!";
     private static final String rejectButtonText = "Ну нет...";
-    private static final String saveButtonId = "SAVE";
-    private static final String rejectButtonId = "REJECT";
+    private static final ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup(
+            new String[][] {{saveButtonText, rejectButtonText}}
+    ).resizeKeyboard(true);
     private static final String greetResponse = "Добро пожаловать! Используйте комманды из меню!";
     private static final String clearResponse = "Очищаем вашу коллекцию!";
     private static final String savedResponse = "Теперь покажем вашу личную коллекцию! Если нравится, то оставляем, а если же нет...";
