@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "api-config.bot-token",
+      "type": "java.lang.String",
+      "description": "Telegram Bot Token."
+    },
+    {
+      "name": "api-config.api-base-url",
+      "type": "java.lang.String",
+      "description": "Base url for Nekosia API."
+    },
+    {
+      "name": "api-config.api-categories",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Main categories for Nekosia API."
+    }
+  ]
+}
