@@ -82,7 +82,7 @@ public class FeedHandler implements ChatEventHandler {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
 
-        String saveId = Callbacks.dataOf(query.data());
+        String saveId = Callbacks.dataOf(query.data()).orElseThrow();
         try {
             savedService.saveImage(userId, saveId);
         } catch (Exception e) {
@@ -114,8 +114,8 @@ public class FeedHandler implements ChatEventHandler {
     private InlineKeyboardMarkup formFeedImageKeyboard(ImageDto image) {
         var keyboard = new InlineKeyboardMarkup();
         keyboard.addRow(
-            new InlineKeyboardButton("Нравится").callbackData(Callbacks.callback(SAVE_CALLBACK, image.externalId())),
-            new InlineKeyboardButton("Следующая").callbackData(Callbacks.callback(NEXT_CALLBACK))
+            new InlineKeyboardButton("\u2764\uFE0F Сохранить").callbackData(Callbacks.callback(SAVE_CALLBACK, image.externalId())),
+            new InlineKeyboardButton("Дальше").callbackData(Callbacks.callback(NEXT_CALLBACK))
         );
         return keyboard;
     }

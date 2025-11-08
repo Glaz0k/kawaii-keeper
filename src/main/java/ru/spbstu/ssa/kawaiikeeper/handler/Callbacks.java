@@ -2,6 +2,8 @@ package ru.spbstu.ssa.kawaiikeeper.handler;
 
 import org.springframework.lang.Nullable;
 
+import java.util.Optional;
+
 public final class Callbacks {
 
     private static final char CALLBACK_DELIMITER = '.';
@@ -20,9 +22,9 @@ public final class Callbacks {
         return identifier;
     }
 
-    public static String dataOf(String callback) {
+    public static Optional<String> dataOf(String callback) {
         int index = callback.indexOf(CALLBACK_DELIMITER);
-        return (index == -1) ? null : callback.substring(index + 1);
+        return (index == -1) ? Optional.empty() : Optional.of(callback.substring(index + 1));
     }
 
     public static String identifierOf(String callback) {
