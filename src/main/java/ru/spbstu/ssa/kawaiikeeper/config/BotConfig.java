@@ -2,12 +2,10 @@ package ru.spbstu.ssa.kawaiikeeper.config;
 
 import com.pengrad.telegrambot.TelegramBot;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClient;
-
-import java.util.Objects;
 
 @RequiredArgsConstructor
 @Configuration
@@ -17,13 +15,15 @@ public class BotConfig {
 
     @Bean
     public RestClient restClient() {
-        return RestClient.create(apiConfig.getApiBaseUrl());
+        return RestClient.builder()
+            .baseUrl(apiConfig.getApiBaseUrl())
+            .defaultHeader(HttpHeaders.USER_AGENT, "Kawaii-Keeper/0.1")
+            .build();
     }
 
     @Bean
-    public TelegramBot telegramBot(@Value("${api-config.bot-token}") String botToken) {
-        Objects.requireNonNull(botToken, "Bot token is null");
-        return new TelegramBot(botToken);
+    public TelegramBot telegramBot() {
+        return new TelegramBot(apiConfig.getBotToken());
     }
 
 }

@@ -5,31 +5,35 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-import ru.spbstu.ssa.kawaiikeeper.exception.UserActionException;
-import ru.spbstu.ssa.kawaiikeeper.handler.ChatEventHandler;
+import ru.spbstu.ssa.kawaiikeeper.exception.ChatActionException;
 import ru.spbstu.ssa.kawaiikeeper.handler.Callbacks;
+import ru.spbstu.ssa.kawaiikeeper.handler.ChatEventHandler;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.function.Function;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class BotService {
+public final class BotService {
 
     private final TelegramBot bot;
     private final List< ChatEventHandler > availableHandlers;
 
-    private final Map< String, Consumer< ? super Message > > commandHandlers = new HashMap<>();
-    private final Map< String, Consumer< ? super CallbackQuery > > callbackHandlers = new HashMap<>();
+    private final Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers = new HashMap<>();
+    private final Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers = new HashMap<>();
 
     @PostConstruct
     private void registerBot() {
@@ -44,9 +48,13 @@ public class BotService {
 
         log.info("Registering bot listener");
         bot.setUpdatesListener(updates -> {
-            updates.forEach(this::handleUpdate);
-            return UpdatesListener.CONFIRMED_UPDATES_ALL;
-        });
+                log.info("Updates received: {}", updates.size());
+                updates.forEach(this::handleUpdate);
+                return UpdatesListener.CONFIRMED_UPDATES_ALL;
+            },
+            e -> log.error("Telegram exception", e)
+        );
+        log.info("Bot successfully registered");
     }
 
     private void registerChatEventHandler(@NonNull ChatEventHandler chatEventHandler) {
@@ -62,26 +70,40 @@ public class BotService {
             } else if (update.callbackQuery() != null) {
                 handleCallbackQuery(update.callbackQuery());
             }
-        } catch (UserActionException e) {
-            log.error(e.getMessage(), e);
+        } catch (ChatActionException e) {
+            log.warn("Exception occurred: {}", e.getMessage());
             bot.execute(new SendMessage(e.getChatId(), e.getMessage()));
         }
     }
 
     private void handleMessage(@NonNull Message message) {
         String command = message.text().substring(1);
+        log.info("Received command {} from userId={}", command, message.from().id());
         var handler = commandHandlers.get(command);
-        if (handler != null) {
-            handler.accept(message);
-        }
+        handlePrepared(handler, message);
     }
 
     private void handleCallbackQuery(@NonNull CallbackQuery query) {
         String identifier = Callbacks.identifierOf(query.data());
+        log.info("Received callback {} from userId={}", identifier, query.from().id());
         var handler = callbackHandlers.get(identifier);
-        if (handler != null) {
-            handler.accept(query);
+        handlePrepared(handler, query);
+        bot.execute(new AnswerCallbackQuery(query.id()));
+    }
+
+    private < T > void handlePrepared(@Nullable Function< ? super T, Optional< ? extends BaseRequest< ?, ? > > > handler,
+                                      T preparedData) {
+        if (handler == null) {
+            return;
         }
+        handler.apply(preparedData)
+            .ifPresent(req -> {
+                log.info("Sending {} request", req.getClass().getSimpleName());
+                var response = bot.execute(req);
+                if (!response.isOk()) {
+                    log.error("Request failed with code {}. {}", response.errorCode(), response.description());
+                }
+            });
     }
 
 }
