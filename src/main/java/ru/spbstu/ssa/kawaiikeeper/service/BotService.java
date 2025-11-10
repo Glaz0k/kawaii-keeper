@@ -2,12 +2,14 @@ package ru.spbstu.ssa.kawaiikeeper.service;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.SetMyCommands;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,9 @@ public class BotService {
         log.info("Handled callbacks:");
         callbackHandlers.keySet().forEach(log::info);
 
+        log.info("Setting up commands");
+        setUpCommands();
+
         log.info("Registering bot listener");
         bot.setUpdatesListener(updates -> {
                 log.info("Updates received: {}", updates.size());
@@ -61,6 +66,18 @@ public class BotService {
         log.info("Registering {}", chatEventHandler.getClass().getSimpleName());
         commandHandlers.putAll(chatEventHandler.commandHandlers());
         callbackHandlers.putAll(chatEventHandler.callbackHandlers());
+    }
+
+    private void setUpCommands() {
+        BotCommand[] commands = {
+            new BotCommand("/start", "Начать ленту"),
+            new BotCommand("/category", "Выбор категории"),
+            new BotCommand("/saved", "Моя коллекция"),
+            new BotCommand("/clear", "Очистить коллекцию")
+        };
+
+        SetMyCommands setCommands = new SetMyCommands(commands);
+        bot.execute(setCommands);
     }
 
     private void handleUpdate(@NonNull Update update) {
