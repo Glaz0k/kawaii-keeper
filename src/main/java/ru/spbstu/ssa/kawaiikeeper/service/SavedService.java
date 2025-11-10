@@ -1,5 +1,6 @@
 package ru.spbstu.ssa.kawaiikeeper.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,11 @@ public class SavedService {
 
     public void removeImage(long id) {
         savedRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void clearImages(long userId) {
+        savedRepository.deleteByUserId(userId);
     }
 
 }

@@ -10,4 +10,6 @@ public interface SavedRepository extends CrudRepository< Saved, Long > {
     List< Saved > findByUserIdOrderByCreatedAtAsc(long userId);
 
     Boolean existsByUserId(long userId);
+
+    void deleteByUserId(long userId);
 }
