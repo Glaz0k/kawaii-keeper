@@ -46,6 +46,12 @@ public class ClearHandler implements ChatEventHandler {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
+        if (!savedService.hasImages(userId)) {
+            return Optional.of(
+                new SendMessage(chatId, "Ваша коллекция и так пуста...")
+            );
+        }
+
         log.info("Clear request for userId={}", userId);
         InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(
             new InlineKeyboardButton(UnicodeEmoji.DISAPPOINTED_FACE + " Очищаем")
