@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import ru.spbstu.ssa.kawaiikeeper.common.Callbacks;
 import ru.spbstu.ssa.kawaiikeeper.config.ApiConfig;
 import ru.spbstu.ssa.kawaiikeeper.exception.ChatActionException;
 import ru.spbstu.ssa.kawaiikeeper.service.CategoryService;
@@ -39,7 +40,7 @@ public class CategoryHandler implements ChatEventHandler {
     public CategoryHandler(CategoryService categoryService, ApiConfig apiConfig) {
         this.categoryService = categoryService;
         this.availableCategories = apiConfig.getApiCategories();
-        this.pageCount = (availableCategories.size() + PAGE_SIZE - 1) /  PAGE_SIZE;
+        this.pageCount = (availableCategories.size() + PAGE_SIZE - 1) / PAGE_SIZE;
     }
 
     @Override
@@ -107,19 +108,19 @@ public class CategoryHandler implements ChatEventHandler {
     }
 
     private InlineKeyboardMarkup formCategoryPageKeyboard(int page) {
-        if (page < 0 || page > pageCount) {
-            throw new RuntimeException("Page index out of range");
+        if (page < 0 || page > pageCount - 1) {
+            throw new IndexOutOfBoundsException("Page index out of range");
         }
         var keyboard = new InlineKeyboardMarkup();
         List< InlineKeyboardButton > controlRow = new ArrayList<>();
         if (page > 0) {
-            controlRow.add(new InlineKeyboardButton("<--").callbackData(Callbacks.callback(
+            controlRow.add(new InlineKeyboardButton(UnicodeEmoji.LEFT_ARROW.toString()).callbackData(Callbacks.callback(
                 SET_PAGE_CALLBACK,
                 String.valueOf(page - 1)
             )));
         }
-        if (page < pageCount) {
-            controlRow.add(new InlineKeyboardButton("-->").callbackData(Callbacks.callback(
+        if (page < pageCount - 1) {
+            controlRow.add(new InlineKeyboardButton(UnicodeEmoji.RIGHT_ARROW.toString()).callbackData(Callbacks.callback(
                 SET_PAGE_CALLBACK,
                 String.valueOf(page + 1)
             )));
@@ -132,7 +133,7 @@ public class CategoryHandler implements ChatEventHandler {
             .map(categoryName -> new InlineKeyboardButton(categoryName).callbackData(Callbacks.callback(UPDATE_CATEGORY_CALLBACK, categoryName)))
             .forEach(keyboard::addRow);
 
-        keyboard.addRow(new InlineKeyboardButton("\u274C Отмена").callbackData(Callbacks.callback(CANCEL_CALLBACK)));
+        keyboard.addRow(new InlineKeyboardButton(UnicodeEmoji.CANCEL + " Отмена").callbackData(Callbacks.callback(CANCEL_CALLBACK)));
 
         return keyboard;
     }

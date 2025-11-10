@@ -15,6 +15,10 @@ public class CategoryService {
     private final ApiConfig apiConfig;
     private final CategoryRepository categoryRepository;
 
+    public boolean hasCategory(long userId) {
+        return categoryRepository.findById(userId).isPresent();
+    }
+
     public Optional< Category > findCategory(long userId) {
         return categoryRepository.findById(userId);
     }

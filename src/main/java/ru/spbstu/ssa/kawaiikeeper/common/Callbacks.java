@@ -1,4 +1,4 @@
-package ru.spbstu.ssa.kawaiikeeper.handler;
+package ru.spbstu.ssa.kawaiikeeper.common;
 
 import org.springframework.lang.Nullable;
 
@@ -22,7 +22,7 @@ public final class Callbacks {
         return identifier;
     }
 
-    public static Optional<String> dataOf(String callback) {
+    public static Optional< String > dataOf(String callback) {
         int index = callback.indexOf(CALLBACK_DELIMITER);
         return (index == -1) ? Optional.empty() : Optional.of(callback.substring(index + 1));
     }

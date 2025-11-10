@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import ru.spbstu.ssa.kawaiikeeper.common.Callbacks;
 import ru.spbstu.ssa.kawaiikeeper.dto.ImageDto;
 import ru.spbstu.ssa.kawaiikeeper.entity.Category;
 import ru.spbstu.ssa.kawaiikeeper.exception.ChatActionException;
@@ -55,30 +56,31 @@ public class FeedHandler implements ChatEventHandler {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
-        Optional< Category > category = categoryService.findCategory(userId);
-        if (category.isEmpty()) {
+        if (!categoryService.hasCategory(userId)) {
             log.info("New user: userId={}", userId);
             categoryService.setDefaultCategory(userId);
-            return Optional.of(getGreetings(chatId));
+            return Optional.of(getGreetingsMessage(chatId));
         }
 
         log.info("Start feed for userId={}", userId);
-        return Optional.of(getFeedImage(chatId, category.get()));
+        Category userCategory = categoryService
+            .findCategory(userId)
+            .orElseThrow();
+        return Optional.of(getFeedMessage(chatId, userCategory));
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleNext(@NonNull CallbackQuery query) {
+    private Optional< SendPhoto > handleNext(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
 
-        Category current = categoryService
+        log.info("Next feed for userId={}", userId);
+        Category userCategory = categoryService
             .findCategory(userId)
             .orElseThrow(() -> new ChatActionException(chatId, "Не указана категория"));
-
-        log.info("Next feed for userId={}", userId);
-        return Optional.of(getFeedImage(chatId, current));
+        return Optional.of(getFeedMessage(chatId, userCategory));
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleSave(@NonNull CallbackQuery query) {
+    private Optional< SendMessage > handleSave(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
 
@@ -93,28 +95,28 @@ public class FeedHandler implements ChatEventHandler {
         return Optional.of(new SendMessage(chatId, "Изображение успешно сохранено :)"));
     }
 
-    private SendPhoto getFeedImage(long chatId, Category category) {
-        log.info("Getting feed image for userId={}", category.getUserId());
+    private SendPhoto getFeedMessage(long chatId, Category category) {
+        log.info("Getting feed for userId={}", category.getUserId());
 
-        ImageDto nextImage;
+        ImageDto image;
         try {
-            nextImage = imageService.pollNext(category);
+            image = imageService.pollNext(category);
         } catch (Exception e) {
-            throw new ChatActionException(chatId, "Произошла ошибка при получении изображения", e);
+            throw new ChatActionException(chatId, "Не удалось получить фото");
         }
-        log.info("Got {} for userId={}", nextImage, category.getUserId());
 
-        var caption = formFeedImageCaption(category, nextImage);
-        var keyboard = formFeedImageKeyboard(nextImage);
-        return new SendPhoto(chatId, nextImage.imageUrl())
-            .replyMarkup(keyboard)
-            .caption(caption);
+        log.info("Got {} for userId={}", image, category.getUserId());
+        String caption = formFeedImageCaption(category, image);
+        InlineKeyboardMarkup keyboard = formFeedImageKeyboard(image);
+        return new SendPhoto(chatId, image.imageUrl())
+            .caption(caption)
+            .replyMarkup(keyboard);
     }
 
     private InlineKeyboardMarkup formFeedImageKeyboard(ImageDto image) {
         var keyboard = new InlineKeyboardMarkup();
         keyboard.addRow(
-            new InlineKeyboardButton("\u2764\uFE0F Сохранить").callbackData(Callbacks.callback(SAVE_CALLBACK, image.externalId())),
+            new InlineKeyboardButton(UnicodeEmoji.HEART + " Сохранить").callbackData(Callbacks.callback(SAVE_CALLBACK, image.externalId())),
             new InlineKeyboardButton("Дальше").callbackData(Callbacks.callback(NEXT_CALLBACK))
         );
         return keyboard;
@@ -126,7 +128,7 @@ public class FeedHandler implements ChatEventHandler {
         return currentCategory + "\n" + imageMainCategory;
     }
 
-    private SendMessage getGreetings(long chatId) {
+    private SendMessage getGreetingsMessage(long chatId) {
         InlineKeyboardButton startFeedButton = new InlineKeyboardButton("Начнём").callbackData(Callbacks.callback(NEXT_CALLBACK));
         return new SendMessage(chatId, "Добро пожаловать! Используйте команды из меню!")
             .replyMarkup(new InlineKeyboardMarkup(startFeedButton));

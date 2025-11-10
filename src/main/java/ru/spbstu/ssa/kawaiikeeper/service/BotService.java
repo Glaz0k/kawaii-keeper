@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import ru.spbstu.ssa.kawaiikeeper.common.Callbacks;
 import ru.spbstu.ssa.kawaiikeeper.exception.ChatActionException;
-import ru.spbstu.ssa.kawaiikeeper.handler.Callbacks;
 import ru.spbstu.ssa.kawaiikeeper.handler.ChatEventHandler;
 
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import java.util.function.Function;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public final class BotService {
+public class BotService {
 
     private final TelegramBot bot;
     private final List< ChatEventHandler > availableHandlers;

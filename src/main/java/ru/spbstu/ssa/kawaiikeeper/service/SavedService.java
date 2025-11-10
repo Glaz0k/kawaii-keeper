@@ -4,8 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import ru.spbstu.ssa.kawaiikeeper.dto.ImageDto;
+import ru.spbstu.ssa.kawaiikeeper.dto.SavedDto;
 import ru.spbstu.ssa.kawaiikeeper.entity.Saved;
 import ru.spbstu.ssa.kawaiikeeper.repository.SavedRepository;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -29,4 +32,27 @@ public class SavedService {
             null)
         );
     }
+
+    public List< SavedDto > findOrderedImages(long userId) {
+        return savedRepository.findByUserIdOrderByCreatedAtAsc(userId)
+            .stream()
+            .map(saved -> new SavedDto(
+                saved.getId(),
+                saved.getUserId(),
+                saved.getExternalId(),
+                saved.getImageUrl(),
+                saved.getCategoryName(),
+                saved.getCreatedAt()
+            ))
+            .toList();
+    }
+
+    public boolean hasImages(long userId) {
+        return savedRepository.existsByUserId(userId);
+    }
+
+    public void removeImage(long id) {
+        savedRepository.deleteById(id);
+    }
+
 }
