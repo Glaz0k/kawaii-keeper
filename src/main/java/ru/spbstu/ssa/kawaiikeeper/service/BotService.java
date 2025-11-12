@@ -85,6 +85,7 @@ public class BotService {
                 handleMessage(update.message());
             } else if (update.callbackQuery() != null) {
                 handleCallbackQuery(update.callbackQuery());
+                bot.execute(new AnswerCallbackQuery(update.callbackQuery().id()));
             }
         } catch (ChatActionException e) {
             log.warn("Exception occurred: {}", e.getMessage());
@@ -104,7 +105,6 @@ public class BotService {
         log.info("Received callback {} from userId={}", identifier, query.from().id());
         var handler = callbackHandlers.get(identifier);
         handlePrepared(handler, query);
-        bot.execute(new AnswerCallbackQuery(query.id()));
     }
 
     private < T > void handlePrepared(@Nullable Function< ? super T, List< ? extends BaseRequest< ?, ? > > > handler,

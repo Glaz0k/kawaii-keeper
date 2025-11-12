@@ -8,7 +8,8 @@ public enum UnicodeEmoji {
     CANCEL("\u274C"),
     HEART("\u2764\uFE0F"),
     BROKEN_HEART("\uD83D\uDC94"),
-    DISAPPOINTED_FACE("\uD83D\uDE1E");
+    DISAPPOINTED_FACE("\uD83D\uDE1E"),
+    THUMBS_UP("\uD83D\uDC4D");
 
     public final String value;
 

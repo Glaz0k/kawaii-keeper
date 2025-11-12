@@ -4,9 +4,8 @@ import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
-import com.pengrad.telegrambot.request.BaseRequest;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.request.SendPhoto;
+import com.pengrad.telegrambot.model.request.InputMediaPhoto;
+import com.pengrad.telegrambot.request.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -75,17 +74,31 @@ public class FeedHandler implements ChatEventHandler {
     private List< ? extends BaseRequest< ?, ? > > handleNext(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
+        int messageId = query.maybeInaccessibleMessage().messageId();
 
         log.info("Next feed for userId={}", userId);
         Category userCategory = categoryService
             .findCategory(userId)
             .orElseThrow(() -> new ChatActionException(chatId, "Не указана категория"));
-        return List.of(getFeedMessage(chatId, userCategory));
+        ImageDto image = getFeedImage(chatId, userCategory);
+        InlineKeyboardMarkup keyboard = formFeedImageKeyboard(image);
+        String caption = formFeedImageCaption(userCategory, image);
+
+        var editImageReq = new EditMessageMedia(chatId, messageId, new InputMediaPhoto(image.imageUrl()));
+        var editCaptionReq = new EditMessageCaption(chatId, messageId)
+            .caption(caption)
+            .replyMarkup(keyboard);
+
+        return List.of(
+            editImageReq,
+            editCaptionReq
+        );
     }
 
-    private List< SendMessage > handleSave(@NonNull CallbackQuery query) {
+    private List< ? extends BaseRequest< ?, ? > > handleSave(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
+        int messageId = query.maybeInaccessibleMessage().messageId();
 
         String saveId = Callbacks.dataOf(query.data()).orElseThrow();
         try {
@@ -95,25 +108,37 @@ public class FeedHandler implements ChatEventHandler {
         }
 
         log.info("Saved {} for userId={}", saveId, userId);
-        return List.of(new SendMessage(chatId, "Изображение успешно сохранено :)"));
+        return List.of(
+            new AnswerCallbackQuery(query.id())
+                .text("Изображение успешно сохранено :)"),
+            new EditMessageReplyMarkup(chatId, messageId).replyMarkup(formSavedKeyboard())
+        );
     }
 
     private SendPhoto getFeedMessage(long chatId, Category category) {
-        log.info("Getting feed for userId={}", category.getUserId());
-
-        ImageDto image;
-        try {
-            image = imageService.pollNext(category);
-        } catch (Exception e) {
-            throw new ChatActionException(chatId, "Не удалось получить фото");
-        }
-
-        log.info("Got {} for userId={}", image, category.getUserId());
+        ImageDto image = getFeedImage(chatId, category);
         String caption = formFeedImageCaption(category, image);
         InlineKeyboardMarkup keyboard = formFeedImageKeyboard(image);
         return new SendPhoto(chatId, image.imageUrl())
             .caption(caption)
             .replyMarkup(keyboard);
+    }
+
+    private ImageDto getFeedImage(long chatId, Category category) {
+        try {
+            return imageService.pollNext(category);
+        } catch (Exception e) {
+            throw new ChatActionException(chatId, "Не удалось получить фото");
+        }
+    }
+
+    private InlineKeyboardMarkup formSavedKeyboard() {
+        var keyboard = new InlineKeyboardMarkup();
+        keyboard.addRow(
+            new InlineKeyboardButton(UnicodeEmoji.THUMBS_UP + " Сохранено").callbackData(Callbacks.callback()),
+            new InlineKeyboardButton("Дальше").callbackData(Callbacks.callback(NEXT_CALLBACK))
+        );
+        return keyboard;
     }
 
     private InlineKeyboardMarkup formFeedImageKeyboard(ImageDto image) {

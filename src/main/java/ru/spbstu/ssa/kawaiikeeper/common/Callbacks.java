@@ -7,6 +7,7 @@ import java.util.Optional;
 public final class Callbacks {
 
     private static final char CALLBACK_DELIMITER = '.';
+    private static final String EMPTY_DATA = "EMPTY";
 
     private Callbacks() {
     }
@@ -30,6 +31,10 @@ public final class Callbacks {
     public static String identifierOf(String callback) {
         int index = callback.indexOf(CALLBACK_DELIMITER);
         return (index == -1) ? callback : callback.substring(0, index);
+    }
+
+    public static String callback() {
+        return EMPTY_DATA;
     }
 
 }
