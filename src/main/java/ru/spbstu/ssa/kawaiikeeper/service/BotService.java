@@ -88,7 +88,7 @@ public class BotService {
                 bot.execute(new AnswerCallbackQuery(update.callbackQuery().id()));
             }
         } catch (ChatActionException e) {
-            log.warn("Exception occurred: {}", e.getMessage());
+            log.warn("Exception by user's actions", e);
             bot.execute(new SendMessage(e.getChatId(), e.getMessage()));
         }
     }

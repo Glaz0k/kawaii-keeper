@@ -4,10 +4,7 @@ import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
-import com.pengrad.telegrambot.request.BaseRequest;
-import com.pengrad.telegrambot.request.DeleteMessage;
-import com.pengrad.telegrambot.request.EditMessageText;
-import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -78,7 +75,7 @@ public class CategoryHandler implements ChatEventHandler {
         return List.of(new EditMessageText(chatId, messageId, text).replyMarkup(keyboard));
     }
 
-    private List< SendMessage > handleUpdateCategory(@NonNull CallbackQuery query) {
+    private List< AnswerCallbackQuery > handleUpdateCategory(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
@@ -87,7 +84,9 @@ public class CategoryHandler implements ChatEventHandler {
             categoryService.updateCategory(userId, updateCategory);
 
             log.info("Update category to \"{}\" for userId={}", updateCategory, userId);
-            return List.of(new SendMessage(chatId, "Категория успешно обновлена, теперь - %s".formatted(updateCategory)));
+            return List.of(
+                new AnswerCallbackQuery(query.id()).text("Категория успешно обновлена, теперь - %s".formatted(updateCategory))
+            );
         } catch (Exception e) {
             throw new ChatActionException(chatId, "Не удалось обновить категорию", e);
         }

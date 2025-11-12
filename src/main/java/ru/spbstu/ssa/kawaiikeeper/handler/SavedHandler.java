@@ -5,10 +5,7 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.InputMediaPhoto;
-import com.pengrad.telegrambot.request.BaseRequest;
-import com.pengrad.telegrambot.request.EditMessageMedia;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.request.SendPhoto;
+import com.pengrad.telegrambot.request.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -22,6 +19,7 @@ import ru.spbstu.ssa.kawaiikeeper.exception.ChatActionException;
 import ru.spbstu.ssa.kawaiikeeper.service.SavedService;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -97,14 +95,41 @@ public class SavedHandler implements ChatEventHandler {
     private List< ? extends BaseRequest< ?, ? > > handleRemove(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
+        int messageId = query.maybeInaccessibleMessage().messageId();
 
-        long removeId = Long.parseLong(Callbacks.dataOf(query.data()).orElseThrow());
-        savedService.removeImage(removeId);
+        List< SavedDto > remaining;
+        int removedPage;
+        try {
+            List< SavedDto > userSaved = savedService.findOrderedImages(userId);
+            removedPage = Integer.parseInt(Callbacks.dataOf(query.data()).orElseThrow());
+            SavedDto removed = userSaved.get(removedPage);
+            remaining = userSaved.stream()
+                .filter(saved -> !saved.id().equals(removed.id()))
+                .toList();
+            savedService.removeImage(removed.id());
+            log.info("Remove saved (id={}) for userId={}", removed.id(), userId);
+        } catch (Exception e) {
+            throw new ChatActionException(chatId, "Не удалось удалить изображение", e);
+        }
 
-        log.info("Remove saved (id={}) for userId={}", removeId, userId);
-        return List.of(
-            new SendMessage(chatId, "Успешно убрано из коллекции")
-        );
+        var requests = new LinkedList< BaseRequest< ?, ? > >();
+        requests.add(new AnswerCallbackQuery(query.id()).text("Изображение успешно убрано из коллекции"));
+        if (remaining.isEmpty()) {
+            requests.add(new DeleteMessage(chatId, messageId));
+            requests.add(getNotFoundMessage(chatId));
+        } else {
+            SavedPageInfo pageInfo = getRemovedPage(remaining, removedPage);
+            InlineKeyboardMarkup keyboard = formSavedImageKeyboard(pageInfo);
+            requests.add(new EditMessageMedia(chatId, messageId, new InputMediaPhoto(pageInfo.saved.imageUrl()))
+                .replyMarkup(keyboard));
+        }
+
+        return requests;
+    }
+
+    private SavedPageInfo getRemovedPage(List< SavedDto > remaining, int removedPage) {
+        int currentPage = (remaining.size() == removedPage) ? (removedPage - 1) : removedPage;
+        return new SavedPageInfo(remaining, currentPage);
     }
 
     private InlineKeyboardMarkup formSavedImageKeyboard(SavedPageInfo pageInfo) {
@@ -122,7 +147,7 @@ public class SavedHandler implements ChatEventHandler {
         keyboard.addRow(controlRow.toArray(new InlineKeyboardButton[0]));
 
         keyboard.addRow(new InlineKeyboardButton(UnicodeEmoji.BROKEN_HEART + " Больше не нравится")
-            .callbackData(Callbacks.callback(REMOVE_SAVED_CALLBACK, pageInfo.saved.id().toString())));
+            .callbackData(Callbacks.callback(REMOVE_SAVED_CALLBACK, pageInfo.currPage.toString())));
 
         return keyboard;
     }
