@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 import ru.spbstu.ssa.kawaiikeeper.common.Callbacks;
 import ru.spbstu.ssa.kawaiikeeper.service.SavedService;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
@@ -29,27 +29,25 @@ public class ClearHandler implements ChatEventHandler {
     private final SavedService savedService;
 
     @Override
-    public @NotNull Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
+    public @NotNull Map< String, Function< ? super Message, List< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
         return Map.of(
             CLEAR_COMMAND, this::handleClear
         );
     }
 
     @Override
-    public @NotNull Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
+    public @NotNull Map< String, Function< ? super CallbackQuery, List< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
         return Map.of(
             CONFIRM_CLEAR_CALLBACK, this::handleClearConfirm
         );
     }
 
-    private Optional< SendMessage > handleClear(@NonNull Message message) {
+    private List< SendMessage > handleClear(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
         if (!savedService.hasImages(userId)) {
-            return Optional.of(
-                new SendMessage(chatId, "Ваша коллекция и так пуста...")
-            );
+            return List.of(new SendMessage(chatId, "Ваша коллекция и так пуста..."));
         }
 
         log.info("Clear request for userId={}", userId);
@@ -57,19 +55,19 @@ public class ClearHandler implements ChatEventHandler {
             new InlineKeyboardButton(UnicodeEmoji.DISAPPOINTED_FACE + " Очищаем")
                 .callbackData(Callbacks.callback(CONFIRM_CLEAR_CALLBACK))
         );
-        return Optional.of(
+        return List.of(
             new SendMessage(chatId, "Вы уверены, что хотите очистить коллекцию?")
                 .replyMarkup(keyboard)
         );
     }
 
-    private Optional< SendMessage > handleClearConfirm(@NonNull CallbackQuery query) {
+    private List< SendMessage > handleClearConfirm(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
         savedService.clearImages(userId);
 
         log.info("Clear collection for userId={}", userId);
-        return Optional.of(new SendMessage(chatId, "Ваша коллекция была очищена. Надеемся вы найдете что-то более стоящее!"));
+        return List.of(new SendMessage(chatId, "Ваша коллекция была очищена. Надеемся вы найдете что-то более стоящее!"));
     }
 }

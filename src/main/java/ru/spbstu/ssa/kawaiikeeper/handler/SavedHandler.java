@@ -24,7 +24,6 @@ import ru.spbstu.ssa.kawaiikeeper.service.SavedService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
@@ -39,27 +38,27 @@ public class SavedHandler implements ChatEventHandler {
     private final SavedService savedService;
 
     @Override
-    public @NotNull Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
+    public @NotNull Map< String, Function< ? super Message, List< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
         return Map.of(
             SAVED_COMMAND, this::handleSaved
         );
     }
 
     @Override
-    public @NotNull Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
+    public @NotNull Map< String, Function< ? super CallbackQuery, List< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
         return Map.of(
             SET_PAGE_CALLBACK, this::handleSetPage,
             REMOVE_SAVED_CALLBACK, this::handleRemove
         );
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleSaved(@NonNull Message message) {
+    private List< ? extends BaseRequest< ?, ? > > handleSaved(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
         if (!savedService.hasImages(userId)) {
             log.info("Not found saved for userId={}", userId);
-            return Optional.of(getNotFoundMessage(chatId));
+            return List.of(getNotFoundMessage(chatId));
         }
 
         List< SavedDto > userSaved = savedService.findOrderedImages(userId);
@@ -67,13 +66,13 @@ public class SavedHandler implements ChatEventHandler {
         InlineKeyboardMarkup keyboard = formSavedImageKeyboard(pageInfo);
 
         log.info("Start saved for userId={}", userId);
-        return Optional.of(
+        return List.of(
             new SendPhoto(chatId, pageInfo.saved.imageUrl())
                 .replyMarkup(keyboard)
         );
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleSetPage(@NonNull CallbackQuery query) {
+    private List< ? extends BaseRequest< ?, ? > > handleSetPage(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
@@ -89,13 +88,13 @@ public class SavedHandler implements ChatEventHandler {
         InlineKeyboardMarkup keyboard = formSavedImageKeyboard(pageInfo);
 
         log.info("Set page {} for userId={}", pageInfo.currPage, userId);
-        return Optional.of(
+        return List.of(
             new EditMessageMedia(chatId, messageId, new InputMediaPhoto(pageInfo.saved.imageUrl()))
                 .replyMarkup(keyboard)
         );
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleRemove(@NonNull CallbackQuery query) {
+    private List< ? extends BaseRequest< ?, ? > > handleRemove(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
@@ -103,7 +102,7 @@ public class SavedHandler implements ChatEventHandler {
         savedService.removeImage(removeId);
 
         log.info("Remove saved (id={}) for userId={}", removeId, userId);
-        return Optional.of(
+        return List.of(
             new SendMessage(chatId, "Успешно убрано из коллекции")
         );
     }

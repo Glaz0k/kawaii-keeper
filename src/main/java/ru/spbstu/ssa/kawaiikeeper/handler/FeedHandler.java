@@ -20,8 +20,8 @@ import ru.spbstu.ssa.kawaiikeeper.service.CategoryService;
 import ru.spbstu.ssa.kawaiikeeper.service.ImageService;
 import ru.spbstu.ssa.kawaiikeeper.service.SavedService;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
@@ -38,38 +38,41 @@ public class FeedHandler implements ChatEventHandler {
     private final SavedService savedService;
 
     @Override
-    public @NotNull Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
+    public @NotNull Map< String, Function< ? super Message, List< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
         return Map.of(
             START_COMMAND, this::handleStart
         );
     }
 
     @Override
-    public @NotNull Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
+    public @NotNull Map< String, Function< ? super CallbackQuery, List< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
         return Map.of(
             NEXT_CALLBACK, this::handleNext,
             SAVE_CALLBACK, this::handleSave
         );
     }
 
-    private Optional< ? extends BaseRequest< ?, ? > > handleStart(@NonNull Message message) {
+    private List< ? extends BaseRequest< ?, ? > > handleStart(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
         if (!categoryService.hasCategory(userId)) {
             log.info("New user: userId={}", userId);
-            categoryService.setDefaultCategory(userId);
-            return Optional.of(getGreetingsMessage(chatId));
+            Category userCategory = categoryService.setDefaultCategory(userId);
+            return List.of(
+                getGreetingsMessage(chatId),
+                getFeedMessage(chatId, userCategory)
+            );
         }
 
         log.info("Start feed for userId={}", userId);
         Category userCategory = categoryService
             .findCategory(userId)
             .orElseThrow();
-        return Optional.of(getFeedMessage(chatId, userCategory));
+        return List.of(getFeedMessage(chatId, userCategory));
     }
 
-    private Optional< SendPhoto > handleNext(@NonNull CallbackQuery query) {
+    private List< ? extends BaseRequest< ?, ? > > handleNext(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
 
@@ -77,10 +80,10 @@ public class FeedHandler implements ChatEventHandler {
         Category userCategory = categoryService
             .findCategory(userId)
             .orElseThrow(() -> new ChatActionException(chatId, "Не указана категория"));
-        return Optional.of(getFeedMessage(chatId, userCategory));
+        return List.of(getFeedMessage(chatId, userCategory));
     }
 
-    private Optional< SendMessage > handleSave(@NonNull CallbackQuery query) {
+    private List< SendMessage > handleSave(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
 
@@ -92,7 +95,7 @@ public class FeedHandler implements ChatEventHandler {
         }
 
         log.info("Saved {} for userId={}", saveId, userId);
-        return Optional.of(new SendMessage(chatId, "Изображение успешно сохранено :)"));
+        return List.of(new SendMessage(chatId, "Изображение успешно сохранено :)"));
     }
 
     private SendPhoto getFeedMessage(long chatId, Category category) {
@@ -129,8 +132,6 @@ public class FeedHandler implements ChatEventHandler {
     }
 
     private SendMessage getGreetingsMessage(long chatId) {
-        InlineKeyboardButton startFeedButton = new InlineKeyboardButton("Начнём").callbackData(Callbacks.callback(NEXT_CALLBACK));
-        return new SendMessage(chatId, "Добро пожаловать! Используйте команды из меню!")
-            .replyMarkup(new InlineKeyboardMarkup(startFeedButton));
+        return new SendMessage(chatId, "Добро пожаловать! Используйте команды из меню!");
     }
 }

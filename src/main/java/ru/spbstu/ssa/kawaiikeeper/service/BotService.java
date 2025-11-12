@@ -23,7 +23,6 @@ import ru.spbstu.ssa.kawaiikeeper.handler.ChatEventHandler;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
@@ -34,8 +33,8 @@ public class BotService {
     private final TelegramBot bot;
     private final List< ChatEventHandler > availableHandlers;
 
-    private final Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers = new HashMap<>();
-    private final Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers = new HashMap<>();
+    private final Map< String, Function< ? super Message, List< ? extends BaseRequest< ?, ? > > > > commandHandlers = new HashMap<>();
+    private final Map< String, Function< ? super CallbackQuery, List< ? extends BaseRequest< ?, ? > > > > callbackHandlers = new HashMap<>();
 
     @PostConstruct
     private void registerBot() {
@@ -108,13 +107,13 @@ public class BotService {
         bot.execute(new AnswerCallbackQuery(query.id()));
     }
 
-    private < T > void handlePrepared(@Nullable Function< ? super T, Optional< ? extends BaseRequest< ?, ? > > > handler,
+    private < T > void handlePrepared(@Nullable Function< ? super T, List< ? extends BaseRequest< ?, ? > > > handler,
                                       T preparedData) {
         if (handler == null) {
             return;
         }
         handler.apply(preparedData)
-            .ifPresent(req -> {
+            .forEach(req -> {
                 log.info("Sending {} request", req.getClass().getSimpleName());
                 var response = bot.execute(req);
                 if (!response.isOk()) {

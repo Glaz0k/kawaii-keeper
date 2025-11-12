@@ -44,14 +44,14 @@ public class CategoryHandler implements ChatEventHandler {
     }
 
     @Override
-    public @NonNull Map< String, Function< ? super Message, Optional< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
+    public @NonNull Map< String, Function< ? super Message, List< ? extends BaseRequest< ?, ? > > > > commandHandlers() {
         return Map.of(
             CATEGORY_COMMAND, this::handleCategory
         );
     }
 
     @Override
-    public @NonNull Map< String, Function< ? super CallbackQuery, Optional< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
+    public @NonNull Map< String, Function< ? super CallbackQuery, List< ? extends BaseRequest< ?, ? > > > > callbackHandlers() {
         return Map.of(
             SET_PAGE_CALLBACK, this::handleSetPage,
             UPDATE_CATEGORY_CALLBACK, this::handleUpdateCategory,
@@ -59,16 +59,16 @@ public class CategoryHandler implements ChatEventHandler {
         );
     }
 
-    private Optional< SendMessage > handleCategory(@NonNull Message message) {
+    private List< SendMessage > handleCategory(@NonNull Message message) {
         long chatId = message.chat().id();
 
         String text = formCategoryPageText(0);
         InlineKeyboardMarkup keyboard = formCategoryPageKeyboard(0);
 
-        return Optional.of(new SendMessage(chatId, text).replyMarkup(keyboard));
+        return List.of(new SendMessage(chatId, text).replyMarkup(keyboard));
     }
 
-    private Optional< EditMessageText > handleSetPage(@NonNull CallbackQuery query) {
+    private List< EditMessageText > handleSetPage(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
         int page = Integer.parseInt((Callbacks.dataOf(query.data()).orElseThrow()));
@@ -76,10 +76,10 @@ public class CategoryHandler implements ChatEventHandler {
         String text = formCategoryPageText(page);
         InlineKeyboardMarkup keyboard = formCategoryPageKeyboard(page);
 
-        return Optional.of(new EditMessageText(chatId, messageId, text).replyMarkup(keyboard));
+        return List.of(new EditMessageText(chatId, messageId, text).replyMarkup(keyboard));
     }
 
-    private Optional< SendMessage > handleUpdateCategory(@NonNull CallbackQuery query) {
+    private List< SendMessage > handleUpdateCategory(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
@@ -88,19 +88,19 @@ public class CategoryHandler implements ChatEventHandler {
             categoryService.updateCategory(userId, updateCategory);
 
             log.info("Update category to \"{}\" for userId={}", updateCategory, userId);
-            return Optional.of(new SendMessage(chatId, "Категория успешно обновлена, теперь - %s".formatted(updateCategory)));
+            return List.of(new SendMessage(chatId, "Категория успешно обновлена, теперь - %s".formatted(updateCategory)));
         } catch (Exception e) {
             throw new ChatActionException(chatId, "Не удалось обновить категорию", e);
         }
     }
 
-    private Optional< DeleteMessage > handleCancel(@NonNull CallbackQuery query) {
+    private List< DeleteMessage > handleCancel(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
 
         log.info("Cancel category update for userId={}", userId);
-        return Optional.of(new DeleteMessage(chatId, messageId));
+        return List.of(new DeleteMessage(chatId, messageId));
     }
 
     private String formCategoryPageText(int page) {
