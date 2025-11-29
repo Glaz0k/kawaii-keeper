@@ -12,5 +12,4 @@ public class KawaiiKeeperApplication {
     public static void main(String[] args) {
         SpringApplication.run(KawaiiKeeperApplication.class, args);
     }
-
 }
