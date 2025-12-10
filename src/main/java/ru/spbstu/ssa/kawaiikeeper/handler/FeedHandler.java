@@ -51,7 +51,7 @@ public class FeedHandler implements ChatEventHandler {
         );
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleStart(@NonNull Message message) {
+    public List< ? extends BaseRequest< ?, ? > > handleStart(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
@@ -71,7 +71,7 @@ public class FeedHandler implements ChatEventHandler {
         return List.of(getFeedMessage(chatId, userCategory));
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleNext(@NonNull CallbackQuery query) {
+    public List< ? extends BaseRequest< ?, ? > > handleNext(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
@@ -95,7 +95,7 @@ public class FeedHandler implements ChatEventHandler {
         );
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleSave(@NonNull CallbackQuery query) {
+    public List< ? extends BaseRequest< ?, ? > > handleSave(@NonNull CallbackQuery query) {
         long userId = query.from().id();
         long chatId = query.maybeInaccessibleMessage().chat().id();
         int messageId = query.maybeInaccessibleMessage().messageId();

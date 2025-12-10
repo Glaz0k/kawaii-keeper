@@ -55,7 +55,7 @@ public class CategoryHandler implements ChatEventHandler {
         );
     }
 
-    private List< SendMessage > handleCategory(@NonNull Message message) {
+    public List< SendMessage > handleCategory(@NonNull Message message) {
         long chatId = message.chat().id();
 
         String text = formCategoryPageText(0);
@@ -64,7 +64,7 @@ public class CategoryHandler implements ChatEventHandler {
         return List.of(new SendMessage(chatId, text).replyMarkup(keyboard));
     }
 
-    private List< EditMessageText > handleSetPage(@NonNull CallbackQuery query) {
+    public List< EditMessageText > handleSetPage(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
         int page = Integer.parseInt((Callbacks.dataOf(query.data()).orElseThrow()));
@@ -75,7 +75,7 @@ public class CategoryHandler implements ChatEventHandler {
         return List.of(new EditMessageText(chatId, messageId, text).replyMarkup(keyboard));
     }
 
-    private List< AnswerCallbackQuery > handleUpdateCategory(@NonNull CallbackQuery query) {
+    public List< AnswerCallbackQuery > handleUpdateCategory(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
@@ -92,7 +92,7 @@ public class CategoryHandler implements ChatEventHandler {
         }
     }
 
-    private List< DeleteMessage > handleCancel(@NonNull CallbackQuery query) {
+    public List< DeleteMessage > handleCancel(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
         int messageId = query.maybeInaccessibleMessage().messageId();

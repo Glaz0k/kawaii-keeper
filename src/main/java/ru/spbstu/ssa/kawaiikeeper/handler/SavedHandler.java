@@ -50,7 +50,7 @@ public class SavedHandler implements ChatEventHandler {
         );
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleSaved(@NonNull Message message) {
+    public List< ? extends BaseRequest< ?, ? > > handleSaved(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
@@ -70,7 +70,7 @@ public class SavedHandler implements ChatEventHandler {
         );
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleSetPage(@NonNull CallbackQuery query) {
+    public List< EditMessageMedia > handleSetPage(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
@@ -92,7 +92,7 @@ public class SavedHandler implements ChatEventHandler {
         );
     }
 
-    private List< ? extends BaseRequest< ?, ? > > handleRemove(@NonNull CallbackQuery query) {
+    public List< ? extends BaseRequest< ?, ? > > handleRemove(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
         int messageId = query.maybeInaccessibleMessage().messageId();
