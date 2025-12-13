@@ -1,0 +1,18 @@
+@startuml
+
+actor Пользователь as user
+cloud telegram as tg
+cloud nekosia.cat as api
+
+rectangle "kawaii-keeper" as app
+
+tg -> user : Показать очередную картинку
+user ->  tg : Выбрать тег,\nОдобрить/отвергнуть картинку
+
+
+tg -- app : Интеграция с telegram
+
+app -> api :  Запрос картинки по тегу
+api -> app :  Ссылка на интересующую картинку
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+
+actor Пользователь as user
+cloud telegram as tg
+cloud nekosia.cat as api
+
+frame "kawaii-keeper" as app {
+    component "Spring\napplication" as back
+    database postgres
+}
+
+tg --> "Картинки" user
+user --> "Запросы" tg : (https)
+
+
+tg --> "Запросы от пользователя" back : (https)
+back --> "Ссылки на картинки" tg
+
+back --> "Запрос картинки по тегу" api
+api --> "Ссылка на интересующую картинку" back : (https)
+
+
+back --> "Понравившиеся\nпользователю\nкартинки" postgres : (jdbc)
+postgres --> "Сохранённые\nизображения\n(Ссылки)" back
+
+
+
+
+@enduml

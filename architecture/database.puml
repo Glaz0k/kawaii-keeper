@@ -1,0 +1,27 @@
+@startuml
+
+skinparam padding 5
+!define primary_key(x) <b><color:#b8861b><&key></color> x</b>
+!define foreign_key(x) <color:#aaaaaa><&key></color> x
+!define column(x) <color:#efefef><&media-record></color> x
+!define table(x) entity x << (T, white) >>
+
+table(Category) {
+    primary_key(user_id) : BIGINT NOT NULL <<PK>>
+    --
+    column(category_name) : VARCHAR NOT NULL
+}
+
+table(Saved) {
+    primary_key(id) : BIGINT NOT NULL <<PK>>
+    --
+    column(user_id) : BIGINT NOT NULL
+    column(external_id) : VARCHAR NOT NULL
+    column(image_url) : VARCHAR NOT NULL
+    column(category_name) : VARCHAR NOT NULL
+    column(created_at) : TIMESTAMP NOT NULL
+    ..
+    UNIQUE {user_id, external_id}
+}
+
+@enduml
