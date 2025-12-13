@@ -42,7 +42,7 @@ public class ClearHandler implements ChatEventHandler {
         );
     }
 
-    private List< SendMessage > handleClear(@NonNull Message message) {
+    public List< SendMessage > handleClear(@NonNull Message message) {
         long chatId = message.chat().id();
         long userId = message.from().id();
 
@@ -61,7 +61,7 @@ public class ClearHandler implements ChatEventHandler {
         );
     }
 
-    private List< SendMessage > handleClearConfirm(@NonNull CallbackQuery query) {
+    public List< SendMessage > handleClearConfirm(@NonNull CallbackQuery query) {
         long chatId = query.maybeInaccessibleMessage().chat().id();
         long userId = query.from().id();
 
